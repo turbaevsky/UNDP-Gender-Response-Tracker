@@ -1,0 +1,111 @@
+#+TITLE: Gender Responce Tracker. Initial report
+#+AUTHOR: Dr W Turbayevsky
+
+#+LaTeX_CLASS_OPTIONS: [a4paper]
+#+LaTeX_HEADER: \usepackage[margin=1in, headheight=40pt]{geometry}
+#+LaTeX_HEADER: \let\description\compactdesc
+#+LaTeX_HEADER: \usepackage{fancyhdr}
+#+LaTeX_HEADER: \usepackage{lipsum}
+#+LaTeX_HEADER: \pagestyle{fancy}
+#+LaTeX_HEADER: \lhead{\includegraphics[width=10mm]{logo.png}}
+#+LaTeX_HEADER: \chead{}
+#+LaTeX_HEADER: \rhead{UNDP-HQ}
+#+LaTeX_HEADER: \usepackage{hyperref}
+#+LaTeX_HEADER: \hypersetup{colorlinks,urlcolor=blue}
+
+* Business task(s)
+
+- Scanning policies for inclusion into the Tracker database:
+  - to scan government websites and local news sources for new policies on a rolling basis
+  - to identify relevant ministry websites to scan for policies
+  - use them to continue to find relevant sources to scan if/when we begin this process
+
+- Creating classification algorithms for policies that have been identified
+  - to classify measures into four discrete policy categories:
+    - labor market,
+    - social protection,
+    - fiscal policy, and
+    - violence against women
+  - training an algorithm on the existing policy dataset
+
+* Plan
+
+As it is mentioned at section [[sc]], the task may be divided into two big stages:
+- create a *resource scanner* (see section [[scan]]) to scan relevant sources, extract papers from there and convert them into a plain text, and
+- *Natural Language Processing Classificator (NLP)* (see section [[mod]] and [[nlp]]) to create and train a document classificator
+
+Optionally, we can *create a Database* to be filled in with an extracted *summary* from the paper analysed along with their classification label.
+
+The current progress info can be found at the section [[sc]].
+
+* Modelling <<mod>>
+** NLP
+As the result of resource scanning the following dataset has been created:
+#+begin_src
+Found 1265 files belonging to 4 classes.
+Using 1012 files for training.
+Found 1265 files belonging to 4 classes.
+Using 253 files for validation.
+Number of batches in raw_train_ds: 32
+Number of batches in raw_val_ds: 8
+#+end_src
+
+There are many approaches can be used to resolve an NLP classification task, from SpaCy [[https://spacy.io/universe/project/classyclassification][Classy Classification]] or [[https://spacy.io/api/textcategorizer][TextCategorizer]] to more flexible [[https://keras.io/examples/nlp/text_classification_from_scratch/][Text classification from scratch]] for [[https://keras.io/][Keras]].
+
+We decided to select the last one for experimental purposes.
+
+The source code is available at both GitHub and in the attachment [[nlp]] below.
+
+The results of modelling are presented in the section [[res]] below.
+
+The trained model can be used for any paper classification and the result may looks as the following:
+#+begin_src python
+  with open("/home/tur/tmp/gender/gender/Economic__financial_and_fiscal_support_for_businesses_and_entrepreneurs/2506.txt",'r') as f:
+      txt = f.read()
+
+  ret = end_to_end_model.predict([txt])
+  print(ret, ret.argmax())
+  labels[ret.argmax()]
+
+[[0.04780519 0.13133842 0.196897   0.62395936]] 3
+
+'Social_protection'
+#+end_src
+
+* Results <<res>>
+The modelling results can be visualised as the following:
+#+BEGIN_center
+#+ATTR_LaTeX: :height 0.3\textwidth :center
+[[./acc.png]]
+#+ATTR_LaTeX: :height 0.3\textwidth :center
+[[./loss.png]]
+#+END_center
+
+The accuracy metric demonstrates a good result, however confusion matrix shows that the only "Economic financial and fiscal support for businesses and entrepreneurs" is recognised correctly. The other ones confusing with each other , e.g. "Labour market" papers are often recognised as "Economic financial and fiscal support for businesses and entrepreneurs" etc.
+
+#+attr_latex: :width 300px
+#+name: fig:conf
+#+caption: Confusion matrix
+[[./conf.png]]
+
+** Known Issues
+- to train the model all the papers should be extracted (from pdf) and converted into SpaCy object. Then the model should be trained for all the objects simultaniously. It requires lot of time and computational resources.
+- the confusion matrix which is shown on figure [[fig:conf]] exposes that the model should be improved to avoid categories confusion.
+  
+** Conclusion
+
+As it is shown in scheduler at the section [[sc]], the task is going on in accordance to the timeline. However, some modelling issues and extra NLP related tasks may require an extra time to be resolved.
+
+#+LaTeX: \appendix
+* Schedule <<sc>>
+- [X] get example of Gender Tracker
+- [X] get full dataset to train a model
+- [X] create an API to scan sources
+- [X] create a Natural Language Processing (NLP) classificator
+- [ ] Create and fill the DB: mid of Sep
+  - [ ] add an NLP summariser into the model to extract key information from a paper
+* Source code
+** Scan the known sources <<scan>>
+#+include: "./scan.py" src python
+** NLP classificator <<nlp>>
+#+include: "./keras_class.py" src python
